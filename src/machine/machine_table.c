@@ -10497,8 +10497,6 @@ const machine_t machines[] = {
     },
 
     /* VIA VT82C580VPX (Apollo VPX/97) */
-    /* Has the VIA VT82C586B southbridge with on-chip KBC identical to the VIA
-       VT82C42N. */
     {
         .name = "[VIA VPX] Zida TX98",
         .internal_name = "tx98",
@@ -10513,7 +10511,7 @@ const machine_t machines[] = {
             .package = CPU_PKG_SOCKET5_7,
             .block = CPU_BLOCK_NONE,
             .min_bus = 50000000,
-            .max_bus = 75000000,
+            .max_bus = 83000000,
             .min_voltage = 2800,
             .max_voltage = 3520,
             .min_multi = 1.5,
@@ -10523,7 +10521,7 @@ const machine_t machines[] = {
         .flags = MACHINE_IDE_DUAL,
         .ram = {
             .min = 8192,
-            .max = 524288,
+            .max = 262144,
             .step = 8192
         },
         .nvrmask = 127,
