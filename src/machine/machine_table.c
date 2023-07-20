@@ -10496,6 +10496,46 @@ const machine_t machines[] = {
         .net_device = NULL
     },
 
+    /* VIA VT82C580VPX (Apollo VPX/97) */
+    /* Has the VIA VT82C586B southbridge with on-chip KBC identical to the VIA
+       VT82C42N. */
+    {
+        .name = "[VIA VPX] Zida TX98",
+        .internal_name = "tx98",
+        .type = MACHINE_TYPE_SOCKET7,
+        .chipset = MACHINE_CHIPSET_VIA_APOLLO_VPX,
+        .init = machine_at_tx98_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET5_7,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 50000000,
+            .max_bus = 75000000,
+            .min_voltage = 2800,
+            .max_voltage = 3520,
+            .min_multi = 1.5,
+            .max_multi = 3.0
+        },
+        .bus_flags = MACHINE_PS2_PCI,
+        .flags = MACHINE_IDE_DUAL,
+        .ram = {
+            .min = 8192,
+            .max = 524288,
+            .step = 8192
+        },
+        .nvrmask = 127,
+        .kbc_device = NULL,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
+    },
+
     /* Apollo VP3 */
     /* Has the VIA VT82C586B southbridge with on-chip KBC identical to the VIA
        VT82C42N. */
