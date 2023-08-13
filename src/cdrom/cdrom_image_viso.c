@@ -331,7 +331,7 @@ viso_fill_fn_short(char *data, const viso_entry_t *entry, viso_entry_t **entries
     }
 
     /* Check if this filename is unique, and add a tail if required, while also adding the extension. */
-    char tail[8];
+    char tail[16];
     for (int i = force_tail; i <= 999999; i++) {
         /* Add tail to the filename if this is not the first run. */
         int tail_len = -1;
@@ -370,7 +370,7 @@ viso_fill_fn_rr(uint8_t *data, const viso_entry_t *entry, size_t max_len)
 
         /* Relocate extension if the original name exceeds the maximum length. */
         if (!S_ISDIR(entry->stats.st_mode)) { /* do this on files only */
-            char *ext = strrchr(entry->basename, '.');
+            const char *ext = strrchr(entry->basename, '.');
             if (ext > entry->basename) {
                 len = strlen(ext);
                 if (len >= max_len)
@@ -401,7 +401,7 @@ viso_fill_fn_joliet(uint8_t *data, const viso_entry_t *entry, size_t max_len) /*
 
         /* Relocate extension if the original name exceeds the maximum length. */
         if (!S_ISDIR(entry->stats.st_mode)) { /* do this on files only */
-            wchar_t *ext = wcsrchr(utf8dec, L'.');
+            const wchar_t *ext = wcsrchr(utf8dec, L'.');
             if (ext > utf8dec) {
                 len = wcslen(ext);
                 if (len > max_len)
@@ -429,7 +429,7 @@ viso_fill_time(uint8_t *data, time_t time, int format, int longform)
            or way too far into 64-bit space (Linux). Fall back to epoch. */
         time_t epoch = 0;
         time_s       = localtime(&epoch);
-        if (!time_s)
+        if (UNLIKELY(!time_s))
             fatal("VISO: localtime(0) = NULL\n");
 
         /* Force year clamping if the timestamp is known to be outside the supported ranges. */
@@ -636,12 +636,8 @@ pad_susp:
             break;
     }
 
-    if ((p - data) > 255)
-#if (defined __amd64__ || defined _M_X64 || defined __aarch64__ || defined _M_ARM64)
-        fatal("VISO: Directory record overflow (%d) on entry %016" PRIX64 "\n", (uint32_t) (uintptr_t) (p - data), (uint64_t) (uintptr_t) entry);
-#else
-        fatal("VISO: Directory record overflow (%d) on entry %08X\n", (uint32_t) (uintptr_t) (p - data), (uint32_t) (uintptr_t) entry);
-#endif
+    if (UNLIKELY((p - data) > 255))
+        fatal("VISO: Directory record overflow (%" PRIuPTR ") on entry %08" PRIXPTR "\n", (uintptr_t) (p - data), (uintptr_t) entry);
 
     data[0] = p - data; /* length */
     return data[0];
@@ -725,8 +721,9 @@ viso_read(void *p, uint8_t *buffer, uint64_t seek, size_t count)
 uint64_t
 viso_get_length(void *p)
 {
-    track_file_t *tf   = (track_file_t *) p;
-    viso_t       *viso = (viso_t *) tf->priv;
+    track_file_t       *tf   = (track_file_t *) p;
+    const viso_t       *viso = (viso_t *) tf->priv;
+
     return ((uint64_t) viso->all_sectors) * viso->sector_size;
 }
 
@@ -799,18 +796,18 @@ viso_init(const char *dirname, int *error)
 
     /* Set up directory traversal. */
     cdrom_image_viso_log("VISO: Traversing directories:\n");
-    viso_entry_t  *entry;
-    viso_entry_t  *last_entry;
-    viso_entry_t  *dir;
-    viso_entry_t  *last_dir;
-    viso_entry_t  *eltorito_dir = NULL;
-    viso_entry_t  *eltorito_entry = NULL;
-    struct dirent *readdir_entry;
-    int            len;
-    int            eltorito_others_present = 0;
-    size_t         dir_path_len;
-    uint64_t       eltorito_offset = 0;
-    uint8_t        eltorito_type   = 0;
+    viso_entry_t        *entry;
+    viso_entry_t        *last_entry;
+    viso_entry_t        *dir;
+    viso_entry_t        *last_dir;
+    const viso_entry_t  *eltorito_dir = NULL;
+    const viso_entry_t  *eltorito_entry = NULL;
+    struct dirent       *readdir_entry;
+    int                  len;
+    int                  eltorito_others_present = 0;
+    size_t               dir_path_len;
+    uint64_t             eltorito_offset = 0;
+    uint8_t              eltorito_type   = 0;
 
     /* Fill root directory entry. */
     dir_path_len = strlen(dirname);

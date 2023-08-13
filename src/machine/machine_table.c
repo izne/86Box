@@ -34,6 +34,7 @@
 #include <86box/keyboard.h>
 #include <86box/sound.h>
 #include <86box/video.h>
+#include <86box/plat_unused.h>
 
 // Temporarily here till we move everything out into the right files
 extern const device_t pcjr_device;
@@ -301,7 +302,7 @@ const machine_t machines[] = {
         .bus_flags = MACHINE_PCJR,
         .flags = MACHINE_VIDEO_FIXED,
         .ram = {
-            .min = 128,
+            .min = 64,
             .max = 640,
             .step = 64
         },
@@ -7753,7 +7754,7 @@ const machine_t machines[] = {
             .max_multi = MACHINE_MULTIPLIER_FIXED
         },
         .bus_flags = MACHINE_PS2_PCI,
-        .flags = MACHINE_IDE_DUAL | MACHINE_APM | MACHINE_ACPI,
+        .flags = MACHINE_IDE_DUAL | MACHINE_VIDEO | MACHINE_APM | MACHINE_ACPI,
         .ram = {
             .min = 2048,
             .max = 131072,
@@ -7763,7 +7764,7 @@ const machine_t machines[] = {
         .kbc_device = NULL,
         .kbc_p1 = 0,
         .gpio = 0,
-        .device = NULL,
+        .device = &mach32_onboard_pci_device,
         .fdc_device = NULL,
         .sio_device = NULL,
         .vid_device = NULL,
@@ -12993,7 +12994,7 @@ machine_get_p1(void)
 }
 
 void
-machine_load_p1(int m)
+machine_load_p1(UNUSED(int m))
 {
     machine_p1 = machines[machine].kbc_p1;
 }
@@ -13005,7 +13006,7 @@ machine_get_gpio(void)
 }
 
 void
-machine_load_gpio(int m)
+machine_load_gpio(UNUSED(int m))
 {
     machine_gpio = machines[machine].gpio;
 }

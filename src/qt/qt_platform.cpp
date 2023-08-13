@@ -36,13 +36,18 @@
 #include <QDateTime>
 #include <QLocalSocket>
 #include <QTimer>
+#include <QProcess>
+#include <QRegularExpression>
 
 #include <QLibrary>
 #include <QElapsedTimer>
 
+#include <QScreen>
+
 #include "qt_rendererstack.hpp"
 #include "qt_mainwindow.hpp"
 #include "qt_progsettings.hpp"
+#include "qt_util.hpp"
 
 #ifdef Q_OS_UNIX
 #    include <sys/mman.h>
@@ -570,14 +575,10 @@ c16stombs(char dst[], const uint16_t src[], int len)
 #endif
 
 #ifdef _WIN32
-#    define LIB_NAME_FLUIDSYNTH  "libfluidsynth.dll"
 #    define LIB_NAME_GS          "gsdll32.dll"
-#    define LIB_NAME_FREETYPE    "freetype.dll"
 #    define MOUSE_CAPTURE_KEYSEQ "F8+F12"
 #else
-#    define LIB_NAME_FLUIDSYNTH  "libfluidsynth"
 #    define LIB_NAME_GS          "libgs"
-#    define LIB_NAME_FREETYPE    "libfreetype"
 #    define MOUSE_CAPTURE_KEYSEQ "CTRL-END"
 #endif
 
@@ -590,13 +591,11 @@ ProgSettings::reloadStrings()
     translatedstrings[IDS_2077] = QCoreApplication::translate("", "Click to capture mouse").toStdWString();
     translatedstrings[IDS_2078] = QCoreApplication::translate("", "Press F8+F12 to release mouse").replace("F8+F12", MOUSE_CAPTURE_KEYSEQ).replace("CTRL-END", QLocale::system().name() == "de_DE" ? "Strg+Ende" : "CTRL-END").toStdWString();
     translatedstrings[IDS_2079] = QCoreApplication::translate("", "Press F8+F12 or middle button to release mouse").replace("F8+F12", MOUSE_CAPTURE_KEYSEQ).replace("CTRL-END", QLocale::system().name() == "de_DE" ? "Strg+Ende" : "CTRL-END").toStdWString();
-    translatedstrings[IDS_2080] = QCoreApplication::translate("", "Failed to initialize FluidSynth").toStdWString();
     translatedstrings[IDS_2131] = QCoreApplication::translate("", "Invalid configuration").toStdWString();
     translatedstrings[IDS_4099] = QCoreApplication::translate("", "MFM/RLL or ESDI CD-ROM drives never existed").toStdWString();
     translatedstrings[IDS_2094] = QCoreApplication::translate("", "Failed to set up PCap").toStdWString();
     translatedstrings[IDS_2095] = QCoreApplication::translate("", "No PCap devices found").toStdWString();
     translatedstrings[IDS_2096] = QCoreApplication::translate("", "Invalid PCap device").toStdWString();
-    translatedstrings[IDS_2111] = QCoreApplication::translate("", "Unable to initialize FreeType").toStdWString();
     translatedstrings[IDS_2112] = QCoreApplication::translate("", "Unable to initialize SDL, libsdl2 is required").toStdWString();
     translatedstrings[IDS_2130] = QCoreApplication::translate("", "Make sure libpcap is installed and that you are on a libpcap-compatible network connection.").toStdWString();
     translatedstrings[IDS_2115] = QCoreApplication::translate("", "Unable to initialize Ghostscript").toStdWString();
@@ -610,24 +609,12 @@ ProgSettings::reloadStrings()
     translatedstrings[IDS_2167] = QCoreApplication::translate("", "Failed to initialize network driver").toStdWString();
     translatedstrings[IDS_2168] = QCoreApplication::translate("", "The network configuration will be switched to the null driver").toStdWString();
 
-    auto flsynthstr = QCoreApplication::translate("", " is required for FluidSynth MIDI output.");
-    if (flsynthstr.contains("libfluidsynth")) {
-        flsynthstr.replace("libfluidsynth", LIB_NAME_FLUIDSYNTH);
+    auto gsstr             = QCoreApplication::translate("", " is required for automatic conversion of PostScript files to PDF.\n\nAny documents sent to the generic PostScript printer will be saved as PostScript (.ps) files.");
+    if (gsstr.contains("libgs")) {
+        gsstr.replace("libgs", LIB_NAME_GS);
     } else
-        flsynthstr.prepend(LIB_NAME_FLUIDSYNTH);
-    translatedstrings[IDS_2134] = flsynthstr.toStdWString();
-    auto gssynthstr             = QCoreApplication::translate("", " is required for automatic conversion of PostScript files to PDF.\n\nAny documents sent to the generic PostScript printer will be saved as PostScript (.ps) files.");
-    if (gssynthstr.contains("libgs")) {
-        gssynthstr.replace("libgs", LIB_NAME_GS);
-    } else
-        gssynthstr.prepend(LIB_NAME_GS);
-    translatedstrings[IDS_2133] = gssynthstr.toStdWString();
-    auto ftsynthstr             = QCoreApplication::translate("", " is required for ESC/P printer emulation.");
-    if (ftsynthstr.contains("libfreetype")) {
-        ftsynthstr.replace("libfreetype", LIB_NAME_FREETYPE);
-    } else
-        ftsynthstr.prepend(LIB_NAME_FREETYPE);
-    translatedstrings[IDS_2132] = ftsynthstr.toStdWString();
+        gsstr.prepend(LIB_NAME_GS);
+    translatedstrings[IDS_2133] = gsstr.toStdWString();
 }
 
 wchar_t *
@@ -657,7 +644,7 @@ plat_get_global_config_dir(char* strptr)
 }
 
 void
-plat_init_rom_paths()
+plat_init_rom_paths(void)
 {
     auto paths = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
 
@@ -677,4 +664,76 @@ plat_init_rom_paths()
         rom_add_path(QDir(path).filePath("86Box/roms").toUtf8().constData());
 #endif
     }
+}
+
+void
+plat_get_cpu_string(char *outbuf, uint8_t len) {
+    auto cpu_string = QString("Unknown");
+    /* Write the default string now in case we have to exit early from an error */
+    qstrncpy(outbuf, cpu_string.toUtf8().constData(), len);
+
+#if defined(Q_OS_MACOS)
+    auto *process = new QProcess(nullptr);
+    QStringList arguments;
+    QString program = "/usr/sbin/sysctl";
+    arguments << "machdep.cpu.brand_string";
+    process->start(program, arguments);
+    if (!process->waitForStarted()) {
+        return;
+    }
+    if (!process->waitForFinished()) {
+        return;
+    }
+    QByteArray result = process->readAll();
+    auto command_result = QString(result).split(": ").last();
+    if(!command_result.isEmpty()) {
+        cpu_string = command_result;
+    }
+#elif defined(Q_OS_WINDOWS)
+    const LPCSTR  keyName   = "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0";
+    const LPCSTR  valueName = "ProcessorNameString";
+    unsigned char buf[32768];
+    DWORD         bufSize;
+    HKEY          hKey;
+    bufSize = 32768;
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, keyName, 0, 1, &hKey) == ERROR_SUCCESS) {
+        if (RegQueryValueExA(hKey, valueName, NULL, NULL, buf, &bufSize) == ERROR_SUCCESS) {
+            cpu_string = reinterpret_cast<const char*>(buf);
+        }
+        RegCloseKey(hKey);
+    }
+#elif defined(Q_OS_LINUX)
+    auto cpuinfo = QString("/proc/cpuinfo");
+    auto cpuinfo_fi = QFileInfo(cpuinfo);
+    if(!cpuinfo_fi.isReadable()) {
+        return;
+    }
+    QFile file(cpuinfo);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream textStream(&file);
+        while(true) {
+            QString line = textStream.readLine();
+            if (line.isNull()) {
+                break;
+            }
+            if(QRegularExpression("model name.*:").match(line).hasMatch()) {
+                auto list = line.split(": ");
+                if(!list.last().isEmpty()) {
+                    cpu_string = list.last();
+                    break;
+                }
+            }
+
+        }
+    }
+#endif
+
+    qstrncpy(outbuf, cpu_string.toUtf8().constData(), len);
+
+}
+
+double
+plat_get_dpi(void)
+{
+    return util::screenOfWidget(main_window)->devicePixelRatio();
 }

@@ -55,6 +55,15 @@ extern int strnicmp(const char *s1, const char *s2, size_t n);
 #    define off64_t  off_t
 #endif
 
+#if __has_attribute(fallthrough)
+# define fallthrough __attribute__((fallthrough))
+#else
+# if __has_attribute(__fallthrough__)
+#  define fallthrough __attribute__((__fallthrough__))
+# endif
+# define fallthrough do {} while (0) /* fallthrough */
+#endif
+
 #ifdef _MSC_VER
 #    define UNUSED(arg) arg
 #else
@@ -133,6 +142,8 @@ extern void     plat_vidapi_reload(void);
 extern void     plat_vid_reload_options(void);
 extern uint32_t plat_language_code(char *langcode);
 extern void     plat_language_code_r(uint32_t lcid, char *outbuf, int len);
+extern void     plat_get_cpu_string(char *outbuf, uint8_t len);
+extern double   plat_get_dpi(void);
 
 /* Resource management. */
 extern void     set_language(uint32_t id);

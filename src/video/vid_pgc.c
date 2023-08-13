@@ -414,7 +414,7 @@ hndl_clbeg(pgc_t *dev)
 }
 
 static void
-hndl_clend(pgc_t *dev)
+hndl_clend(UNUSED(pgc_t *dev))
 {
     /* Should not happen outside a CLBEG. */
 }
@@ -747,7 +747,7 @@ pgc_plot(pgc_t *dev, uint16_t x, uint16_t y)
  * Draw a line (using raster coordinates).
  *
  * Bresenham's Algorithm from:
- *	<https://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C>
+ *  <https://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C>
  *
  * The line pattern mask to use is passed in. Return value is the
  * line pattern mask, rotated by the number of points drawn.
@@ -1035,7 +1035,7 @@ hndl_poly(pgc_t *dev)
 
 /* Parse but don't execute a POLY command (for adding to a command list) */
 static int
-parse_poly(pgc_t *dev, pgc_cl_t *cl, int c)
+parse_poly(pgc_t *dev, pgc_cl_t *cl, UNUSED(int c))
 {
     uint8_t count;
 
@@ -1384,11 +1384,11 @@ hndl_window(pgc_t *dev)
  * core commands (listed below) and subclass commands (listed in the clone).
  *
  * Each row has five parameters:
- * 	ASCII-mode command
- * 	Hex-mode command
- * 	Function that executes this command
- * 	Function that parses this command when building a command list
- * 	Parameter for the parse function
+ *  ASCII-mode command
+ *  Hex-mode command
+ *  Function that executes this command
+ *  Function that parses this command when building a command list
+ *  Parameter for the parse function
  *
  * TODO: This list omits numerous commands present in a genuine PGC
  *       (ARC, AREA, AREABC, BUFFER, CIRCLE etc etc).
@@ -1898,7 +1898,6 @@ pgc_param_coord(pgc_t *dev, int32_t *value)
                     pgc_error(dev, PGC_ERROR_MISSING);
                     return err_digit(dev);
                 }
-                break;
 
             /* Scientific notation. */
             case 'd':

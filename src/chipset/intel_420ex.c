@@ -52,6 +52,9 @@
 typedef struct i420ex_t {
     uint8_t has_ide;
     uint8_t smram_locked;
+    uint8_t pci_slot;
+    uint8_t pad;
+
     uint8_t regs[256];
 
     uint16_t timer_base;
@@ -118,7 +121,7 @@ i420ex_smram_handler_phase0(void)
 static void
 i420ex_smram_handler_phase1(i420ex_t *dev)
 {
-    uint8_t *regs = (uint8_t *) dev->regs;
+    const uint8_t *regs = (uint8_t *) dev->regs;
 
     uint32_t host_base = 0x000a0000;
     uint32_t ram_base  = 0x000a0000;
@@ -165,15 +168,14 @@ i420ex_smram_handler_phase1(i420ex_t *dev)
 static void
 i420ex_drb_recalc(i420ex_t *dev)
 {
-    int i;
     uint32_t boundary;
 
-    for (i = 4; i >= 0; i--)
+    for (int8_t i = 4; i >= 0; i--)
         row_disable(i);
 
-    for (i = 0; i <= 4; i++) {
-	boundary = ((uint32_t) dev->regs[0x60 + i]) & 0xff;
-	row_set_boundary(i, boundary);
+    for (uint8_t i = 0; i <= 4; i++) {
+        boundary = ((uint32_t) dev->regs[0x60 + i]) & 0xff;
+        row_set_boundary(i, boundary);
     }
 
     flushmmucache();
@@ -398,8 +400,8 @@ i420ex_write(int func, int addr, uint8_t val, void *priv)
 static uint8_t
 i420ex_read(int func, int addr, void *priv)
 {
-    i420ex_t *dev = (i420ex_t *) priv;
-    uint8_t   ret;
+    const i420ex_t *dev = (i420ex_t *) priv;
+    uint8_t         ret;
 
     ret = 0xff;
 
@@ -535,7 +537,7 @@ i420ex_init(const device_t *info)
 
     dev->smram = smram_add();
 
-    pci_add_card(PCI_ADD_NORTHBRIDGE, i420ex_read, i420ex_write, dev);
+    pci_add_card(PCI_ADD_NORTHBRIDGE, i420ex_read, i420ex_write, dev, &dev->pci_slot);
 
     dev->has_ide = info->local;
 
