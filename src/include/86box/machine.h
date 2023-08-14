@@ -636,6 +636,7 @@ extern int machine_at_pb680_init(const machine_t *);
 extern int machine_at_pb810_init(const machine_t *);
 extern int machine_at_mb520n_init(const machine_t *);
 extern int machine_at_i430vx_init(const machine_t *);
+extern int machine_at_5dvx_init(const machine_t *);
 
 extern int machine_at_nupro592_init(const machine_t *);
 extern int machine_at_tx97_init(const machine_t *);
