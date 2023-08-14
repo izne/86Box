@@ -7,6 +7,8 @@
 #define MAX_USEC64    1000000ULL
 #define MAX_USEC      1000000.0
 
+#define TIMER_PROCESS 8
+#define TIMER_ENABLE  4
 #define TIMER_SPLIT   2
 #define TIMER_ENABLED 1
 
@@ -117,6 +119,13 @@ timer_is_enabled(pc_timer_t *timer)
     return !!(timer->flags & TIMER_ENABLED);
 }
 
+/*True if timer currently enabled*/
+static __inline int
+timer_is_on(pc_timer_t *timer)
+{
+    return ((timer->flags & TIMER_ENABLED) && (timer->period > 0.0));
+}
+
 /*Return integer timestamp of timer*/
 static __inline uint32_t
 timer_get_ts_int(pc_timer_t *timer)
@@ -204,12 +213,17 @@ timer_process_inline(void)
             timer_head->prev = NULL;
 
         timer->next = timer->prev = NULL;
-        timer->flags &= ~TIMER_ENABLED;
+        timer->flags |= TIMER_PROCESS;
 
         if (timer->flags & TIMER_SPLIT)
             timer_advance_ex(timer, 0);   /* We're splitting a > 1 s period into multiple <= 1 s periods. */
         else if (timer->callback != NULL) /* Make sure it's no NULL, so that we can have a NULL callback when no operation is needed. */
             timer->callback(timer->priv);
+
+        if (timer->flags |= TIMER_ENABLE)
+            timer->flags = (timer->flags & ~TIMER_ENABLE) | TIMER_ENABLED;
+        else
+            timer->flags &= ~TIMER_ENABLED;
     }
 
     timer_target = timer_head->ts.ts32.integer;
