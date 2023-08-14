@@ -4694,9 +4694,9 @@ const machine_t machines[] = {
         .bus_flags = MACHINE_AT,
         .flags = MACHINE_IDE,
         .ram = {
-            .min = 640,
+            .min = 1024,
             .max = 16384,
-            .step = 128
+            .step = 1024
         },
         .nvrmask = 63,
         .kbc_device = NULL,
@@ -4732,9 +4732,9 @@ const machine_t machines[] = {
         .bus_flags = MACHINE_AT,
         .flags = MACHINE_IDE,
         .ram = {
-            .min = 640,
+            .min = 1024,
             .max = 16384,
-            .step = 128
+            .step = 1024
         },
         .nvrmask = 63,
         .kbc_device = NULL,
@@ -7072,7 +7072,7 @@ const machine_t machines[] = {
             .min_multi = 0,
             .max_multi = 0
         },
-        .bus_flags = MACHINE_PCI,
+        .bus_flags = MACHINE_PCI | MACHINE_BUS_PS2_LATCH,
         .flags = MACHINE_IDE_DUAL | MACHINE_APM,
         .ram = {
             .min = 1024,
